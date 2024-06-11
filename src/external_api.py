@@ -1,10 +1,13 @@
-from typing import List, Union
-import requests
 import os
+from typing import Union
+
+import requests
 from dotenv import load_dotenv
-from utils import get_data
+
+from utils import load_transactions
 
 load_dotenv()
+
 
 def get_api_request(url: str, params: dict = None, headers: dict = None) -> Union[requests.Response, None]:
     """## Функция для отправки запроса к API
@@ -39,7 +42,7 @@ def get_api_key(value: str) -> str:
 
     Аргументы:
         `value (str)`: Значение API ключа
-    
+
     Возвращает:
         `str`: API ключ
     """
@@ -49,7 +52,7 @@ def get_api_key(value: str) -> str:
         raise KeyError("API key not found in environment variables")
 
 
-def get_exchange_rate(amount: float, from_currency: str, to_currency: str = 'RUB') -> Union[float, None]:
+def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB") -> Union[float, None]:
     """## Функция для конвертации валюты
     Аргументы:
         `amount (float)`: Сумма
@@ -60,14 +63,8 @@ def get_exchange_rate(amount: float, from_currency: str, to_currency: str = 'RUB
         `float`: Конвертированная сумма
     """
     api_url = "https://api.apilayer.com/exchangerates_data/convert"
-    headers = {
-        "apikey": get_api_key('App_Key')
-    }
-    params = {
-        "from": from_currency,
-        "to": to_currency,
-        "amount": amount
-    }
+    headers = {"apikey": get_api_key("App_Key")}
+    params = {"from": from_currency, "to": to_currency, "amount": amount}
     response = get_api_request(api_url, params=params, headers=headers)
     data = response.json()
     try:
@@ -92,6 +89,6 @@ def convert_transaction_amount(transaction: dict) -> float:
         return amount
     except KeyError as e:
         raise KeyError(f"Key {e} not found in JSON data.")
-    
 
-print(convert_transaction_amount(get_data("data/operations.json")[10]))
+
+print(convert_transaction_amount(load_transactions("data/operations.json")[10]))

@@ -1,36 +1,43 @@
-import unittest
-from unittest.mock import patch
+import os
 import json
-from utils import get_data
+import tempfile
+import pytest
+from utils import load_transactions
 
-class TestGetData(unittest.TestCase):
+@pytest.fixture
+def valid_json_file():
+    # Создаем временный файл с корректными данными JSON
+    data = '[{"id": 1, "amount": 100}, {"id": 2, "amount": 200}]'
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        f.write(data)
+        f.flush()
+        yield f.name
+    # Удаляем временный файл после завершения теста
+    os.unlink(f.name)
 
-    @patch('builtins.open')
-    def test_empty_file(self, mock_open):
-        mock_open.return_value.__enter__.return_value.read.return_value = ''
-        file_path = 'data/operations.json'
-        transactions = get_data(file_path)
-        self.assertEqual(transactions, [])
+@pytest.fixture
+def invalid_json_file():
+    # Создаем временный файл с некорректными данными JSON
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+        f.write("invalid_json")
+        f.flush()
+        yield f.name
+    # Удаляем временный файл после завершения теста
+    os.unlink(f.name)
 
-    @patch('builtins.open')
-    def test_valid_json(self, mock_open):
-        mock_open.return_value.__enter__.return_value.read.return_value = json.dumps([
-            {'id': 1, 'amount': 100, 'date': '2023-10-26'},
-            {'id': 2, 'amount': 50, 'date': '2023-10-27'}
-        ])
-        file_path = 'data/operations.json'
-        transactions = get_data(file_path)
-        self.assertEqual(transactions, [
-            {'id': 1, 'amount': 100, 'date': '2023-10-26'},
-            {'id': 2, 'amount': 50, 'date': '2023-10-27'}
-        ])
+def test_load_transactions_existing_file(valid_json_file):
+    # Проверяем, что функция успешно загружает данные из существующего файла
+    transactions = load_transactions(valid_json_file)
+    assert len(transactions) == 2
+    assert isinstance(transactions[0], dict)
 
-    @patch('builtins.open')
-    def test_invalid_json(self, mock_open):
-        mock_open.return_value.__enter__.return_value.read.return_value = 'invalid json'
-        file_path = 'data/operations.json'
-        with self.assertRaises(json.JSONDecodeError):
-            get_data(file_path)
+def test_load_transactions_nonexistent_file():
+    # Проверяем, что функция возвращает пустой список при попытке загрузки из несуществующего файла
+    transactions = load_transactions("nonexistent_file.json")
+    assert transactions == []
 
-if __name__ == '__main__':
-    unittest.main()
+def test_load_transactions_invalid_json(invalid_json_file):
+    # Проверяем, что функция возвращает пустой список при попытке загрузки некорректного JSON
+    transactions = load_transactions(invalid_json_file)
+    assert transactions == []
+
