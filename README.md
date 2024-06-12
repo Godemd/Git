@@ -4,60 +4,87 @@
 
 ## Особенности
 
-- **filter_by_state**: Фильтрует список словарей на основе значения ключа 'state'.
-- **sort_by_date**: Сортирует список словарей по ключу 'date' в порядке возрастания или убывания.
+- **filter_by_currency(transactions, currency)**: Фильтрует список транзакций по указанной валюте.
+- **transaction_descriptions(transactions)**: Генерирует список описаний для каждой транзакции в предоставленном списке.
+- **card_number_generator(start, end)**: Генерирует список номеров карт в формате XXXX XXXX XXXX XXXX в указанном диапазоне.
 ## Использование
 
-Примеры использования и демонстрации функциональности функции **filter_by_state**:
+Эти функции могут быть использованы для обработки и генерации данных, связанных с транзакциями и номерами карт. Например, вы можете использовать filter_by_currency для фильтрации списка транзакций по транзакциям в определенной валюте, или использовать transaction_descriptions для генерации списка описаний для каждой транзакции.
 
 ```python
 def filter_by_state(dict_list: List[Dict[str, Any]], state: Optional[str] = "EXECUTED") -> List[Dict[str, Any]]:
     return [d for d in dict_list if d.get("state") == state]
 
 # Пример использования функции
-input_list = [
-    {"id": 41428829, "state": "EXECUTED", "date": "2019-07-03T18:35:29.512364"},
-    {"id": 939719570, "state": "EXECUTED", "date": "2018-06-30T02:08:58.425572"},
-    {"id": 594226727, "state": "CANCELED", "date": "2018-09-12T21:27:25.241689"},
-    {"id": 615064591, "state": "CANCELED", "date": "2018-10-14T08:21:33.419441"},
+# Фильтрация транзакций по валюте
+transactions = [
+    {"operationAmount": {"currency": {"code": "USD"}}},
+    {"operationAmount": {"currency": {"code": "EUR"}}},
 ]
-
-output_desc = sort_by_date(input_list)
-output_asc = sort_by_date(input_list, "asc")
-
-print(output_desc)
-print(output_asc)
-
->>> [{'id': 41428829, 'state': 'EXECUTED', 'date': '2019-07-03T18:35:29.512364'}, {'id': 939719570, 'state': 'EXECUTED', 'date': '2018-06-30T02:08:58.425572'}]
-
->>> [{'id': 594226727, 'state': 'CANCELED', 'date': '2018-09-12T21:27:25.241689'}, {'id': 615064591, 'state': 'CANCELED', 'date': '2018-10-14T08:21:33.419441'}]
+filtered_transactions = filter_by_currency(transactions, "USD")
 ```
-Примеры использования и демонстрации функциональности функции **sort_by_date**:
-```python
-def sort_by_date(dict_list: List[Dict[str, Any]], order: Optional[str] = "desc") -> List[Dict[str, Any]]:
-    return sorted(dict_list, key=lambda x: x.get("date", ""), reverse=True if order == "asc" else False)
+# Генерация описаний транзакций
+descriptions = transaction_descriptions(transactions)
 
-# Пример использования функции
-input_list = [
-    {"id": 41428829, "state": "EXECUTED", "date": "2019-07-03T18:35:29.512364"},
-    {"id": 939719570, "state": "EXECUTED", "date": "2018-06-30T02:08:58.425572"},
-    {"id": 594226727, "state": "CANCELED", "date": "2018-09-12T21:27:25.241689"},
-    {"id": 615064591, "state": "CANCELED", "date": "2018-10-14T08:21:33.419441"},
-]
+# Генерация номеров карт
+card_numbers = card_number_generator(1000000000000000, 1000000000000009)
+ 
+ ##test_generators.py
+Этот файл содержит модульные тесты для функций, определенных в src/generators.py.
 
-output_desc = sort_by_date(input_list)
-output_asc = sort_by_date(input_list, "asc")
+##Тестируемые функции
+- **card_number_generator**: Эта функция генерирует последовательность номеров кредитных карт на основе начального и конечного номеров.
+- **filter_by_currency**: Эта функция фильтрует список транзакций по валюте суммы транзакции.
+- **transaction_descriptions**: Эта функция извлекает описания из списка транзакций.
+##Тесты
+Каждая функция имеет несколько тестов, которые охватывают различные сценарии. Например, функция card_number_generator тестируется с разными начальными и конечными номерами, а функция filter_by_currency тестируется с разными валютами.
 
-print(output_desc)
-print(output_asc)
+##Утверждения
+Каждый тест использует утверждения для проверки того, что функция работает как ожидается. Например, тест card_number_generator утверждает, что сгенерированный список номеров карт равен ожидаемому списку.
 
->>> [{'id': 939719570, 'state': 'EXECUTED', 'date': '2018-06-30T02:08:58.425572'},
-{'id': 594226727, 'state': 'CANCELED', 'date': '2018-09-12T21:27:25.241689'},
-{'id': 615064591, 'state': 'CANCELED', 'date': '2018-10-14T08:21:33.419441'},
-{'id': 41428829, 'state': 'EXECUTED', 'date': '2019-07-03T18:35:29.512364'}]
+##Документация
+Файл включает в себя docstrings для каждой функции и теста. Docstrings предоставляют краткое описание функции или теста и его назначение.
 
->>> [{'id': 41428829, 'state': 'EXECUTED', 'date': '2019-07-03T18:35:29.512364'},
-{'id': 615064591, 'state': 'CANCELED', 'date': '2018-10-14T08:21:33.419441'},
-{'id': 594226727, 'state': 'CANCELED', 'date': '2018-09-12T21:27:25.241689'},
-{'id': 939719570, 'state': 'EXECUTED', 'date': '2018-06-30T02:08:58.425572'}]
+# Тесты
+```
+@pytest.mark.parametrize("currency,expected_count", [
+    ("USD", 3),
+    ("RUB", 2),
+    ("EUR", 0)
+])
+def test_filter_by_currency(transactions, currency, expected_count):
+    result = list(filter_by_currency(transactions, currency))
+    assert len(result) == expected_count
+
+@pytest.mark.parametrize("expected_descriptions", [
+    [
+        "Перевод организации",
+        "Перевод со счета на счет",
+        "Перевод со счета на счет",
+        "Перевод с карты на карту",
+        "Перевод организации"
+    ]
+])
+def test_transaction_descriptions(transactions, expected_descriptions):
+    result = list(transaction_descriptions(transactions))
+    assert result == expected_descriptions
+
+@pytest.mark.parametrize("start,end,expected_cards", [
+    (1, 5, [
+        "0000 0000 0000 0001",
+        "0000 0000 0000 0002",
+        "0000 0000 0000 0003",
+        "0000 0000 0000 0004",
+        "0000 0000 0000 0005"
+    ]),
+    (10, 12, [
+        "0000 0000 0000 0010",
+        "0000 0000 0000 0011",
+        "0000 0000 0000 0012"
+    ])
+])
+def test_card_number_generator(start, end, expected_cards):
+    result = list(card_number_generator(start, end))
+    assert result == expected_cards
+
 ```
