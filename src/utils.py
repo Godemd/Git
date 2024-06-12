@@ -1,6 +1,7 @@
 import json
 import os
 
+
 def load_transactions(file_path: str) -> list:
     """
     Возвращает список словарей из JSON-строки, содержащей данные о финансовых транзакциях.
@@ -26,6 +27,7 @@ def load_transactions(file_path: str) -> list:
                 return []
         except json.JSONDecodeError:
             return []
+
 
 # # Пример использования
 # file_path = "data\operations.json"
