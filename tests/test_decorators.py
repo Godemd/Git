@@ -58,7 +58,7 @@ def test_log_error_to_console(capsys):
         console_error_function(2, 3)
     
     captured = capsys.readouterr()
-    assert "console_error_function error: IndexError. Inputs: (2, 3), {}" in captured.outimport pytest
+    assert "console_error_function error: IndexError. Inputs: (2, 3), {}" in captured.out
 import os
 from decorators import log
 
