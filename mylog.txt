@@ -1,0 +1,8 @@
+[2024-05-29 15:34:36.818337] my_function ok: 30
+my_function ok
+my_function ok
+my_function ok
+my_function ok
+my_function ok
+my_function ok
+my_function ok
