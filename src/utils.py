@@ -48,6 +48,7 @@ def load_transactions(file_path: str) -> list:
             logger.error(f"Файл {file_path} содержит некорректные данные")
             return []
 
+
 # Пример использования
 # file_path = "data\operations.json"
 # transactions = load_transactions(file_path)
