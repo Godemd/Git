@@ -1,15 +1,15 @@
 import os
-from typing import Union
+from typing import Any, Dict, Optional
 
 import requests
 from dotenv import load_dotenv
 
-from utils import load_transactions
-
 load_dotenv()
 
 
-def get_api_request(url: str, params: dict = None, headers: dict = None) -> Union[requests.Response, None]:
+def get_api_request(
+    url: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, Any]] = None
+) -> requests.Response:
     """## Функция для отправки запроса к API
     Аргументы:
         `url (str)`: URL API
@@ -18,7 +18,6 @@ def get_api_request(url: str, params: dict = None, headers: dict = None) -> Unio
 
     Возвращает:
         `requests.Response`: Ответ API
-
     """
     try:
         response = requests.get(url, params=params, headers=headers)
@@ -37,7 +36,7 @@ def get_api_request(url: str, params: dict = None, headers: dict = None) -> Unio
     return response
 
 
-def get_api_key(value: str) -> str:
+def get_api_key(value: str) -> str | None:
     """## Функция для получения API ключа
 
     Аргументы:
@@ -52,7 +51,7 @@ def get_api_key(value: str) -> str:
         raise KeyError("API key not found in environment variables")
 
 
-def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB") -> Union[float, None]:
+def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB") -> Optional[float]:
     """## Функция для конвертации валюты
     Аргументы:
         `amount (float)`: Сумма
@@ -63,17 +62,19 @@ def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB
         `float`: Конвертированная сумма
     """
     api_url = "https://api.apilayer.com/exchangerates_data/convert"
-    headers = {"apikey": get_api_key("App_Key")}
+    headers = {"apikey": get_api_key("API_KEY_APILAYER")}
     params = {"from": from_currency, "to": to_currency, "amount": amount}
     response = get_api_request(api_url, params=params, headers=headers)
+    if not response:
+        return None
     data = response.json()
     try:
-        return data["result"]
+        return float(data["result"])
     except KeyError as e:
         raise KeyError(f"Key {e} not found in JSON data.")
 
 
-def convert_transaction_amount(transaction: dict) -> float:
+def convert_transaction_amount(transaction: dict) -> Optional[float]:
     """## Функция для обработки транзакции
     Аргументы:
         `transaction (dict)`: Транзакция
@@ -86,9 +87,6 @@ def convert_transaction_amount(transaction: dict) -> float:
         from_currency = transaction["operationAmount"]["currency"]["code"]
         if from_currency != "RUB":
             return get_exchange_rate(amount, from_currency)
-        return amount
+        return float(amount)
     except KeyError as e:
         raise KeyError(f"Key {e} not found in JSON data.")
-
-
-print(convert_transaction_amount(load_transactions("data/operations.json")[10]))
