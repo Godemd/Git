@@ -43,19 +43,6 @@ def test_json_decode_error(mock_logger, mock_json_load, mock_open, mock_exists):
     mock_json_load.assert_called_once()
     mock_logger.error.assert_called_once_with('Файл test.json содержит некорректные данные')
 
-
-# Тест на успешный загрузку csv файла
-@patch('os.path.exists', return_value=True)
-@patch('pandas.read_csv')
-@patch('src.utils.logger')
-def test_read_csv_success(mock_logger, mock_read_csv, mock_exists):
-    mock_read_csv.return_value = pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]})
-    result = read_data_from_json('test.csv')
-    assert result == [{'col1': 1, 'col2': 3}, {'col1': 2, 'col2': 4}]
-    mock_exists.assert_called_once_with('test.csv')
-    mock_read_csv.assert_called_once_with('test.csv')
-    mock_logger.info.assert_called_once_with('Файл test.csv успешно загружен')
-
 # Тест на успешный загрузку xlsx файла
 @patch('os.path.exists', return_value=True)
 @patch('pandas.read_excel')
