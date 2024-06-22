@@ -1,20 +1,18 @@
 import json
 import logging
 import os
-from typing import Any, List
+from typing import Any
 
 import pandas as pd
 
 
 def setup_logger(name: str) -> logging.Logger:
     """
-    Настройка логгера.
-
+    ## Настройка логгера
     Аргументы:
-        name (str): Имя логгера.
-
+        `name (str)`: Имя логгера
     Возвращает:
-        logging.Logger: Объект логгера.
+        `logging.Logger`: Объект логгера
     """
     file_path = os.path.join("logs", f"{name}.log")
 
@@ -34,59 +32,44 @@ def setup_logger(name: str) -> logging.Logger:
 logger = setup_logger("utils")
 
 
-def read_data_from_json(file_path: str) -> List[Any]:
+def read_data_from_json(file_path: str) -> list[Any]:
     """
-    Возвращает список словарей из файла JSON, CSV или XLSX.
-
+    ## Возвращает список словарей из JSON/CSV/XLSX
     Аргументы:
-        file_path (str): Путь к файлу.
-
+        `file_path (str)`: Путь к JSON/CSV/XLSX-файлу
     Возвращает:
-        list: Список словарей с данными из файла.
+        `list`: список словарей
     """
     if not os.path.exists(file_path):
         logger.warning(f"Файл {file_path} не найден")
         return []
 
     if file_path.endswith(".json"):
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
+            try:
                 data = json.load(file)
                 if isinstance(data, list):
                     logger.info(f"Файл {file_path} успешно загружен")
                     return data
+
                 else:
                     logger.error(f"Файл {file_path} содержит некорректные данные")
                     return []
-        except json.JSONDecodeError:
-            logger.error(f"Файл {file_path} содержит некорректные данные")
-            return []
+
+            except json.JSONDecodeError:
+                logger.error(f"Файл {file_path} содержит некорректные данные")
+                return []
 
     elif file_path.endswith(".csv"):
-        try:
-            df = pd.read_csv(file_path, delimiter=";")
-            logger.info(f"Файл {file_path} успешно загружен")
-            return df.to_dict("records")
-        except Exception as e:
-            logger.error(f"Ошибка при загрузке файла {file_path}: {e}")
-            return []
+        df = pd.read_csv(file_path, delimiter=";")
+        logger.info(f"Файл {file_path} успешно загружен")
+        return df.to_dict("records")
 
     elif file_path.endswith(".xlsx"):
-        try:
-            df = pd.read_excel(file_path)
-            logger.info(f"Файл {file_path} успешно загружен")
-            return df.to_dict("records")
-        except Exception as e:
-            logger.error(f"Ошибка при загрузке файла {file_path}: {e}")
-            return []
+        df = pd.read_excel(file_path)
+        logger.info(f"Файл {file_path} успешно загружен")
+        return df.to_dict("records")
 
     else:
         logger.error(f"Неподдерживаемый формат файла {file_path}")
         return []
-
-
-# Пример вызова функции
-if __name__ == "__main__":
-    file_path = "data\\transactions_excel.xlsx"  # Укажите путь к вашему файлу
-    data = read_data_from_json(file_path)
-    print(data)
