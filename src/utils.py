@@ -1,7 +1,6 @@
-import json
 import logging
 import os
-from typing import Any
+from typing import Union
 
 import pandas as pd
 
@@ -32,44 +31,61 @@ def setup_logger(name: str) -> logging.Logger:
 logger = setup_logger("utils")
 
 
-def read_data_from_json(file_path: str) -> list[Any]:
+def read_transactions_csv(file_path: str) -> list:
     """
-    ## Возвращает список словарей из JSON/CSV/XLSX
+    Считывает финансовые транзакции из CSV-файла.
+
     Аргументы:
-        `file_path (str)`: Путь к JSON/CSV/XLSX-файлу
+    - file_path (str): Путь к CSV-файлу.
+
     Возвращает:
-        `list`: список словарей
+    - Union[list, None]: Список словарей с транзакциями или None в случае ошибки.
     """
-    if not os.path.exists(file_path):
-        logger.warning(f"Файл {file_path} не найден")
+    try:
+        logger.info(f"Чтение CSV файла: {file_path}")
+        return pd.read_csv(file_path, delimiter=";").to_dict("records")
+    except Exception as e:
+        logger.error(f"Ошибка при чтении CSV файла '{file_path}': {e}")
         return []
 
-    if file_path.endswith(".json"):
-        with open(file_path, "r", encoding="utf-8") as file:
-            try:
-                data = json.load(file)
-                if isinstance(data, list):
-                    logger.info(f"Файл {file_path} успешно загружен")
-                    return data
 
-                else:
-                    logger.error(f"Файл {file_path} содержит некорректные данные")
-                    return []
+def read_transactions_excel(file_path: str) -> list:
+    """
+    Считывает финансовые транзакции из Excel-файла.
 
-            except json.JSONDecodeError:
-                logger.error(f"Файл {file_path} содержит некорректные данные")
-                return []
+    Аргументы:
+    - file_path (str): Путь к Excel-файлу.
 
-    elif file_path.endswith(".csv"):
-        df = pd.read_csv(file_path, delimiter=";")
-        logger.info(f"Файл {file_path} успешно загружен")
-        return df.to_dict("records")
-
-    elif file_path.endswith(".xlsx"):
-        df = pd.read_excel(file_path)
-        logger.info(f"Файл {file_path} успешно загружен")
-        return df.to_dict("records")
-
-    else:
-        logger.error(f"Неподдерживаемый формат файла {file_path}")
+    Возвращает:
+    - Union[list, None]: Список словарей с транзакциями или None в случае ошибки.
+    """
+    try:
+        logger.info(f"Чтение Excel файла: {file_path}")
+        return pd.read_excel(file_path).to_dict("records")
+    except Exception as e:
+        logger.error(f"Ошибка при чтении Excel файла '{file_path}': {e}")
         return []
+
+
+def read_transactions_json(file_path: str) -> list:
+    """
+    Считывает финансовые транзакции из JSON-файла.
+
+    Аргументы:
+    - file_path (str): Путь к JSON-файлу.
+
+    Возвращает:
+    - Union[list, None]: Список словарей с транзакциями или None в случае ошибки.
+    """
+    try:
+        logger.info(f"Чтение JSON файла: {file_path}")
+        return pd.read_json(file_path).to_dict("records")
+    except Exception as e:
+        logger.error(f"Ошибка при чтении JSON файла '{file_path}': {e}")
+        return []
+
+
+# Чтение транзакций из Excel файла
+excel_file_path = "data\transactions_excel.xlsx"
+transactions_excel = read_transactions_excel(excel_file_path)
+print(transactions_excel)
