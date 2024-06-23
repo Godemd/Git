@@ -85,7 +85,3 @@ def read_transactions_json(file_path: str) -> list:
         return []
 
 
-# Чтение транзакций из Excel файла
-excel_file_path = "data\transactions_excel.xlsx"
-transactions_excel = read_transactions_excel(excel_file_path)
-print(transactions_excel)
