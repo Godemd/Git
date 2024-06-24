@@ -1,45 +1,92 @@
-from src.utils import setup_logger
+import os
+from typing import Any, Dict, Optional
 
-logger = setup_logger("masks")
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-def mask_account_number(account_number: str) -> str:
+def get_api_request(
+    url: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, Any]] = None
+) -> requests.Response:
+    """## Функция для отправки запроса к API
+    Аргументы:
+        `url (str)`: URL API
+        `params (dict)`: Параметры запроса
+        `headers (dict)`: Заголовки запроса
+
+    Возвращает:
+        `requests.Response`: Ответ API
     """
-    ### Маскирует номер карты/счёта
-    #### Для номера карты, показывая только первые 4 цифры, последние 4 цифры и скрывая остальные.
-    #### Для номера счёта, показывая только последние 4 цифры.
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()  # This will raise HTTPError for bad responses
+    except requests.exceptions.ConnectionError as e:
+        raise requests.exceptions.ConnectionError("API connection error: " + str(e))
+    except requests.exceptions.HTTPError as e:
+        raise requests.exceptions.HTTPError("API request error: " + str(e))
+    except requests.exceptions.Timeout as e:
+        raise requests.exceptions.Timeout("API request timeout: " + str(e))
+    except requests.exceptions.RequestException as e:
+        raise requests.exceptions.RequestException("API request error: " + str(e))
+    else:
+        if not response.content:
+            raise ValueError("API request returned an empty response")
+    return response
 
+
+def get_api_key(value: str) -> str | None:
+    """## Функция для получения API ключа
 
     Аргументы:
-        account_number (str): Номер карты/счёта, который нужно замаскировать.
+        `value (str)`: Значение API ключа
 
-    Возвращается:
-        str: Замаскированный номер карты/счёта.
+    Возвращает:
+        `str`: API ключ
     """
-    logger.info(f"Исходный номер карты: {account_number}")
+    try:
+        return os.getenv(value)
+    except KeyError:
+        raise KeyError("API key not found in environment variables")
 
-    if not account_number.isdigit():
-        logger.error("Номер карты должен содержать только цифры")
-        raise ValueError("Номер должен содержать только цифры")
 
-    if isinstance(account_number, int):
-        logger.error("Номер карты должен быть строкой")
-        raise ValueError("Номер должен быть строкой")
+def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB") -> Optional[float]:
+    """## Функция для конвертации валюты
+    Аргументы:
+        `amount (float)`: Сумма
+        `from_currency (str)`: Изначальная валюта
+        `to_currency (str)`: Конечная валюта
 
-    if len(account_number) == 16:
+    Возвращает:
+        `float`: Конвертированная сумма
+    """
+    api_url = "https://api.apilayer.com/exchangerates_data/convert"
+    headers = {"apikey": get_api_key("API_KEY_APILAYER")}
+    params = {"from": from_currency, "to": to_currency, "amount": amount}
+    response = get_api_request(api_url, params=params, headers=headers)
+    if not response:
+        return None
+    data = response.json()
+    try:
+        return float(data["result"])
+    except KeyError as e:
+        raise KeyError(f"Key {e} not found in JSON data.")
 
-        front_part = account_number[:4]
-        middle_part = account_number[4:6]
-        end_part = account_number[-4:]
 
-        masked_number = f"{front_part} {middle_part}** **** {end_part}"
-        logger.info(f"Замаскированный номер карты: {masked_number}")
-        return masked_number
+def convert_transaction_amount(transaction: dict) -> Optional[float]:
+    """## Функция для обработки транзакции
+    Аргументы:
+        `transaction (dict)`: Транзакция
 
-    if len(account_number) == 20:
-        masked_number = f"**{account_number[-4:]}"
-        logger.info(f"Замаскированный номер счёта: {masked_number}")
-        return masked_number
-
-    logger.error("Неверный формат номера")
-    raise ValueError("Неверный формат номера")
+    Возвращает:
+        `float`: Сумма в рублях
+    """
+    try:
+        amount = transaction["operationAmount"]["amount"]
+        from_currency = transaction["operationAmount"]["currency"]["code"]
+        if from_currency != "RUB":
+            return get_exchange_rate(amount, from_currency)
+        return float(amount)
+    except KeyError as e:
+        raise KeyError(f"Key {e} not found in JSON data.")
