@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from typing import Any
 
 import pandas as pd
 
@@ -32,11 +31,11 @@ def setup_logger(name: str) -> logging.Logger:
 logger = setup_logger("utils")
 
 
-def read_data_from_json(file_path: str) -> list[Any]:
+def read_data_transactions(file_path: str) -> list[dict]:
     """
-    ## Возвращает список словарей из JSON-строки
+    ## Возвращает список словарей из JSON/CSV/XLSX
     Аргументы:
-        `data_str (str)`: Путь к JSON-файлу
+        `file_path (str)`: Путь к JSON/CSV/XLSX-файлу
     Возвращает:
         `list`: список словарей
     """
@@ -61,7 +60,7 @@ def read_data_from_json(file_path: str) -> list[Any]:
                 return []
 
     elif file_path.endswith(".csv"):
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, delimiter=";")
         logger.info(f"Файл {file_path} успешно загружен")
         return df.to_dict("records")
 
@@ -73,8 +72,3 @@ def read_data_from_json(file_path: str) -> list[Any]:
     else:
         logger.error(f"Неподдерживаемый формат файла {file_path}")
         return []
-
-
-if __name__ == "__main__":
-    data = read_data_from_json("data\\transactions_excel.xlsx")
-    print(data)

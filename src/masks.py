@@ -1,64 +1,92 @@
-from src.utils import setup_logger
+import os
+from typing import Any, Dict, Optional
 
-logger = setup_logger("masks")
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-def mask_card_number(card_number: str) -> str:
-    """
-    ### Маскирует номер карты, показывая только первые 4 цифры, последние 4 цифры и скрывая остальные.
-
+def get_api_request(
+    url: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, Any]] = None
+) -> requests.Response:
+    """## Функция для отправки запроса к API
     Аргументы:
-        card_number (str): Номер карты, который нужно замаскировать.
-
-    Возвращается:
-        str: Замаскированный номер карты.
-    """
-    logger.info(f"Исходный номер карты: {card_number}")
-    if len(card_number) != 16:
-        logger.error("Неверный формат номера карты")
-        raise ValueError("Неверный формат номера карты")
-
-    if not card_number.isdigit():
-        logger.error("Номер карты должен содержать только цифры")
-        raise ValueError("Номер карты должен содержать только цифры")
-
-    if isinstance(card_number, int):
-        logger.error("Номер карты должен быть строкой")
-        raise ValueError("Номер карты должен быть строкой")
-
-    front_part = card_number[:4]
-    middle_part = card_number[4:6]
-    end_part = card_number[-4:]
-
-    masked_number = f"{front_part} {middle_part}** **** {end_part}"
-    logger.info(f"Замаскированный номер карты: {masked_number}")
-    return masked_number
-
-
-def mask_account_number(account_number: str) -> str:
-    """
-    ## Маскирует номер счета, показывая только последние 4 цифры.
-
-    Аргументы:
-        account_number (str): Номер счета для маскировки.
+        `url (str)`: URL API
+        `params (dict)`: Параметры запроса
+        `headers (dict)`: Заголовки запроса
 
     Возвращает:
-        str: Замаскированный номер счета.
+        `requests.Response`: Ответ API
     """
-    logger.info(f"Исходный номер счета: {account_number}")
-    if len(account_number) != 10:
-        logger.error("Неверный формат номера счета")
-        raise ValueError("Неверный формат номера счета")
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()  # This will raise HTTPError for bad responses
+    except requests.exceptions.ConnectionError as e:
+        raise requests.exceptions.ConnectionError("API connection error: " + str(e))
+    except requests.exceptions.HTTPError as e:
+        raise requests.exceptions.HTTPError("API request error: " + str(e))
+    except requests.exceptions.Timeout as e:
+        raise requests.exceptions.Timeout("API request timeout: " + str(e))
+    except requests.exceptions.RequestException as e:
+        raise requests.exceptions.RequestException("API request error: " + str(e))
+    else:
+        if not response.content:
+            raise ValueError("API request returned an empty response")
+    return response
 
-    if not account_number.isdigit():
-        logger.error("Номер счета должен содержать только цифры")
-        raise ValueError("Номер счета должен содержать только цифры")
 
-    if isinstance(account_number, int):
-        logger.error("Номер счета должен быть строкой")
-        raise ValueError("Номер счета должен быть строкой")
+def get_api_key(value: str) -> str | None:
+    """## Функция для получения API ключа
 
-    masked_number = f"**{account_number[-4:]}"
-    logger.info(f"Замаскированный номер счета: {masked_number}")
+    Аргументы:
+        `value (str)`: Значение API ключа
 
-    return masked_number
+    Возвращает:
+        `str`: API ключ
+    """
+    try:
+        return os.getenv(value)
+    except KeyError:
+        raise KeyError("API key not found in environment variables")
+
+
+def get_exchange_rate(amount: float, from_currency: str, to_currency: str = "RUB") -> Optional[float]:
+    """## Функция для конвертации валюты
+    Аргументы:
+        `amount (float)`: Сумма
+        `from_currency (str)`: Изначальная валюта
+        `to_currency (str)`: Конечная валюта
+
+    Возвращает:
+        `float`: Конвертированная сумма
+    """
+    api_url = "https://api.apilayer.com/exchangerates_data/convert"
+    headers = {"apikey": get_api_key("API_KEY_APILAYER")}
+    params = {"from": from_currency, "to": to_currency, "amount": amount}
+    response = get_api_request(api_url, params=params, headers=headers)
+    if not response:
+        return None
+    data = response.json()
+    try:
+        return float(data["result"])
+    except KeyError as e:
+        raise KeyError(f"Key {e} not found in JSON data.")
+
+
+def convert_transaction_amount(transaction: dict) -> Optional[float]:
+    """## Функция для обработки транзакции
+    Аргументы:
+        `transaction (dict)`: Транзакция
+
+    Возвращает:
+        `float`: Сумма в рублях
+    """
+    try:
+        amount = transaction["operationAmount"]["amount"]
+        from_currency = transaction["operationAmount"]["currency"]["code"]
+        if from_currency != "RUB":
+            return get_exchange_rate(amount, from_currency)
+        return float(amount)
+    except KeyError as e:
+        raise KeyError(f"Key {e} not found in JSON data.")
